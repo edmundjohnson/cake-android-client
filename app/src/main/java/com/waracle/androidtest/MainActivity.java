@@ -3,6 +3,7 @@ package com.waracle.androidtest;
 import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ListFragment;
 import android.support.v7.app.AppCompatActivity;
@@ -77,6 +78,8 @@ public class MainActivity extends AppCompatActivity {
     public static class PlaceholderFragment extends ListFragment {
 
         private static final String TAG = PlaceholderFragment.class.getSimpleName();
+        private static final String KEY_ITEMS = "KEY_ITEMS";
+        private static final String KEY_STATE = "KEY_STATE";
 
         private ListView mListView;
         private MyAdapter mAdapter;
@@ -88,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_main, container, false);
             mListView = (ListView) rootView.findViewById(android.R.id.list);
+
             return rootView;
         }
 
@@ -99,16 +103,40 @@ public class MainActivity extends AppCompatActivity {
             mAdapter = new MyAdapter();
             mListView.setAdapter(mAdapter);
 
-            // Load data from net.
-            new FetchDataTask(this).execute(null, null, null);
+            if (savedInstanceState == null) {
+                // Load data from net
+                new FetchDataTask(this).execute(null, null, null);
+            } else {
+                // Restore the saved list
+                try {
+                    JSONArray array = new JSONArray(savedInstanceState.getString(KEY_ITEMS));
+                    if (mAdapter != null) {
+                        mAdapter.mItems = array;
+                    }
+                } catch (JSONException e) {
+                    Log.e(TAG, "JSONException while restoring list", e);
+                }
 
-            //            try {
-//                JSONArray array = loadData();
-//                mAdapter.setItems(array);
-//            } catch (IOException | JSONException e) {
-//                Log.e(TAG, e.getMessage());
-//            }
+                Parcelable listState = savedInstanceState.getParcelable(KEY_STATE);
+                if (listState != null) {
+                    mListView.onRestoreInstanceState(listState);
+                }
+            }
+        }
 
+        @Override
+        public void onSaveInstanceState(Bundle state) {
+            // Save the list items
+            if (mAdapter != null) {
+                JSONArray array = mAdapter.mItems;
+                state.putString(KEY_ITEMS, array.toString());
+            }
+
+            // Save the list position
+            Parcelable listState = mListView.onSaveInstanceState();
+            state.putParcelable(KEY_STATE, listState);
+
+            super.onSaveInstanceState(state);
         }
 
         public void setAdapterItems(JSONArray array) {

@@ -81,7 +81,9 @@ public class ImageLoader {
     }
 
     private static void setImageView(ImageView imageView, Bitmap bitmap) {
-        imageView.setImageBitmap(bitmap);
+        if (imageView != null) {
+            imageView.setImageBitmap(bitmap);
+        }
     }
 
     /**
